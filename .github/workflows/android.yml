@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: android-${{ github.workflow }}-${{ github.ref }}
@@ -33,8 +33,13 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.47.0
+          flutter-version: 3.19.5
           cache: true
+
+      - name: Create local.properties
+        run: |
+          echo "flutter.sdk=$FLUTTER_HOME" > android/local.properties
+          cat android/local.properties
 
       - name: Verify Flutter
         run: |
@@ -50,13 +55,27 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Clean build
+        run: flutter clean
+
       - name: Build debug APK
         run: flutter build apk --debug
+
+      - name: Build release APK
+        run: flutter build apk --release
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: game-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
